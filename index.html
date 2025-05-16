@@ -243,13 +243,15 @@
     function eraseCookie(name) {
         document.cookie = name+'=; Max-Age=-99999999;';
     }
+
+    // Use 'card-inventory-save' cookie for inventory
     function saveProgress() {
-        setCookie('inventory', JSON.stringify(inventory), 365);
+        setCookie('card-inventory-save', JSON.stringify(inventory), 365);
         setCookie('unlockedExotics', JSON.stringify(Array.from(unlockedExotics)), 365);
         setCookie('unlockedMythicals', JSON.stringify(Array.from(unlockedMythicals)), 365);
     }
     function loadProgress() {
-        let inv = getCookie('inventory');
+        let inv = getCookie('card-inventory-save');
         let exo = getCookie('unlockedExotics');
         let myth = getCookie('unlockedMythicals');
         if (inv) inventory = JSON.parse(inv);
@@ -257,7 +259,7 @@
         if (myth) unlockedMythicals = new Set(JSON.parse(myth));
     }
     function clearProgress() {
-        eraseCookie('inventory');
+        eraseCookie('card-inventory-save');
         eraseCookie('unlockedExotics');
         eraseCookie('unlockedMythicals');
         inventory = {};
