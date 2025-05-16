@@ -165,9 +165,15 @@
             display: none;
             margin-bottom: 15px;
         }
+        /* Restart button spacing */
+        #restart-btn {
+            margin-bottom: 10px;
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
+    <button id="restart-btn" onclick="confirmRestartProgress()">Restart Progress</button>
     <button onclick="toggleAdminInterface()">Admin Mode</button>
     <div id="admin-interface">
         <input type="password" id="admin-password" placeholder="Enter Code">
@@ -212,8 +218,66 @@
             <div id="exotic-cards" class="inventory-row"></div>
         </div>
     </div>
+
+    <!-- Cookie helpers and progress functions -->
     <script>
+    function setCookie(name, value, days) {
+        let expires = "";
+        if (days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days*24*60*60*1000));
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (encodeURIComponent(value) || "")  + expires + "; path=/";
+    }
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+        }
+        return null;
+    }
+    function eraseCookie(name) {
+        document.cookie = name+'=; Max-Age=-99999999;';
+    }
+    function saveProgress() {
+        setCookie('inventory', JSON.stringify(inventory), 365);
+        setCookie('unlockedExotics', JSON.stringify(Array.from(unlockedExotics)), 365);
+        setCookie('unlockedMythicals', JSON.stringify(Array.from(unlockedMythicals)), 365);
+    }
+    function loadProgress() {
+        let inv = getCookie('inventory');
+        let exo = getCookie('unlockedExotics');
+        let myth = getCookie('unlockedMythicals');
+        if (inv) inventory = JSON.parse(inv);
+        if (exo) unlockedExotics = new Set(JSON.parse(exo));
+        if (myth) unlockedMythicals = new Set(JSON.parse(myth));
+    }
+    function clearProgress() {
+        eraseCookie('inventory');
+        eraseCookie('unlockedExotics');
+        eraseCookie('unlockedMythicals');
+        inventory = {};
+        unlockedExotics = new Set();
+        unlockedMythicals = new Set();
+        updateInventory();
+        saveProgress();
+    }
+    function confirmRestartProgress() {
+        if (confirm('ARE YOU SURE you want to restart your progress? This cannot be undone!')) {
+            clearProgress();
+        }
+    }
+    </script>
+    <script>
+        // Main game code (with cookie and sorting updates)
         const rarities = ['Legendary', 'Epic', 'Rare', 'Uncommon', 'Common', 'Mythical', 'Exotic'];
+        // For inventory sorting: Legendary, Epic, Rare, Uncommon, Common (then Mythical, Exotic NOT shown here)
+        const inventoryDisplayOrder = ['Legendary', 'Epic', 'Rare', 'Uncommon', 'Common'];
+
         let rarityChances = [1, 4, 15, 30, 50, 0, 0.1];
         const items = {
             Fantasy: { cards: ['Dragon', 'Wizard', 'Elf', 'Knight', 'Fairy'], exotic: 'Fantasy Phoenix', mythical: 'Golden Dragon' },
@@ -264,6 +328,7 @@
                 unlockedMythicals.add(theme);
             });
             updateInventory();
+            saveProgress();
         }
 
         function openPack(theme) {
@@ -329,6 +394,7 @@
             if (rarity === 'Exotic') unlockedExotics.add(theme);
             if (rarity === 'Mythical') unlockedMythicals.add(theme);
             updateInventory();
+            saveProgress();
         }
 
         function updateInventory() {
@@ -345,51 +411,58 @@
                 themeSection.className = 'inventory-section';
                 themeSection.innerHTML = `<h4>${theme} Pack</h4>`;
 
-                let allUnlocked = true; // Check if all cards in the pack are unlocked
-
-                // Create rows for each card name, sorted by rarity
-                const cardRows = {};
+                // Construct a list of card objects: [{card, rarity}]
+                let allUnlocked = true;
+                let cardList = [];
                 items[theme].cards.forEach(card => {
                     const raritiesUnlocked = inventory[theme][card] || new Set();
-                    raritiesUnlocked.forEach(rarity => {
-                        if (!cardRows[card]) cardRows[card] = [];
-                        cardRows[card].push({ card, rarity });
+                    // Only push normal rarities
+                    inventoryDisplayOrder.forEach(rarity => {
+                        if (raritiesUnlocked.has(rarity)) {
+                            cardList.push({ card, rarity });
+                        }
                     });
+                    // For checking all unlocked:
+                    if (raritiesUnlocked.size < inventoryDisplayOrder.length) {
+                        allUnlocked = false;
+                    }
                 });
 
-                // Sort cards by rarity (rarest to least rare) and render rows
-                Object.entries(cardRows)
-                    .sort(([nameA, cardsA], [nameB, cardsB]) => {
-                        const rarityIndexA = rarities.indexOf(cardsA[0].rarity);
-                        const rarityIndexB = rarities.indexOf(cardsB[0].rarity);
-                        return rarityIndexA - rarityIndexB;
-                    })
-                    .forEach(([cardName, cards]) => {
-                        const row = document.createElement('div');
-                        row.className = 'inventory-row';
-                        cards.forEach(({ card, rarity }) => {
-                            const cardContainer = document.createElement('div');
-                            cardContainer.className = 'inventory-card-container';
+                // Sort by rarity (Legendary, Epic, Rare, Uncommon, Common), then by card name
+                cardList.sort((a, b) => {
+                    const rA = inventoryDisplayOrder.indexOf(a.rarity);
+                    const rB = inventoryDisplayOrder.indexOf(b.rarity);
+                    if (rA !== rB) return rA - rB;
+                    return a.card.localeCompare(b.card);
+                });
 
-                            const cardElement = document.createElement('div');
-                            cardElement.className = `inventory-card inventory-card-unlocked card-${rarity.toLowerCase()}`;
-                            cardElement.innerHTML = `
-                                <div class="front"></div>
-                                <div class="back">${card} (${rarity})</div>
-                            `;
+                // Render the sorted row
+                const row = document.createElement('div');
+                row.className = 'inventory-row';
+                cardList.forEach(({ card, rarity }) => {
+                    const cardContainer = document.createElement('div');
+                    cardContainer.className = 'inventory-card-container';
 
-                            cardContainer.appendChild(cardElement);
-                            row.appendChild(cardContainer);
-                        });
-                        themeSection.appendChild(row);
-                    });
+                    const cardElement = document.createElement('div');
+                    cardElement.className = `inventory-card inventory-card-unlocked card-${rarity.toLowerCase()}`;
+                    cardElement.innerHTML = `
+                        <div class="front"></div>
+                        <div class="back">${card} (${rarity})</div>
+                    `;
+
+                    cardContainer.appendChild(cardElement);
+                    row.appendChild(cardContainer);
+                });
+                themeSection.appendChild(row);
 
                 // Apply golden border if all cards are unlocked
                 const packElement = document.getElementById(`${theme}-Pack`);
-                if (allUnlocked) {
-                    packElement.classList.add('completed');
-                } else {
-                    packElement.classList.remove('completed');
+                if (packElement) {
+                    if (allUnlocked) {
+                        packElement.classList.add('completed');
+                    } else {
+                        packElement.classList.remove('completed');
+                    }
                 }
 
                 normalCardsContainer.appendChild(themeSection);
@@ -433,6 +506,10 @@
             document.getElementById('pack-selection').style.display = 'block';
             document.getElementById('card-selection').style.display = 'none';
         }
+
+        // Load progress on page load
+        loadProgress();
+        updateInventory();
     </script>
 </body>
 </html>
