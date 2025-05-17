@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Card Pack Game</title>
     <style>
-        /* General Styles */
+        /* [styles unchanged; omitted for brevity] */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -44,8 +44,6 @@
         .pack.completed {
             border: 5px solid gold;
         }
-
-        /* Card Styles */
         .cards {
             display: flex;
             justify-content: center;
@@ -99,8 +97,6 @@
         .card-legendary { border-color: gold; }
         .card-mythical { border-color: violet; }
         .card-exotic { border-color: cyan; }
-
-        /* Inventory Layout */
         #inventory {
             margin-top: 20px;
         }
@@ -141,15 +137,11 @@
         .inventory-card-unlocked.card-legendary { border-color: gold; }
         .inventory-card-unlocked.card-mythical { border-color: violet; }
         .inventory-card-unlocked.card-exotic { border-color: cyan; }
-
-        /* Hide sections until cards are unlocked */
         #exotics-section,
         #mythicals-section,
         #normal-cards-section {
             display: none;
         }
-
-        /* Buttons */
         button {
             padding: 10px 20px;
             background-color: #007bff;
@@ -165,7 +157,6 @@
             display: none;
             margin-bottom: 15px;
         }
-        /* Restart button spacing */
         #restart-btn {
             margin-bottom: 10px;
             margin-right: 10px;
@@ -199,28 +190,21 @@
     </div>
     <div id="inventory">
         <h2>Your Inventory</h2>
-
-        <!-- Section for Normal Cards -->
         <div id="normal-cards-section">
             <h3>Normal Cards</h3>
             <div id="normal-cards-container"></div>
         </div>
-
-        <!-- Section for Mythical Cards -->
         <div id="mythicals-section">
             <h3>Mythicals</h3>
             <div id="mythical-cards" class="inventory-row"></div>
         </div>
-
-        <!-- Section for Exotic Cards -->
         <div id="exotics-section">
             <h3>Exotics</h3>
             <div id="exotic-cards" class="inventory-row"></div>
         </div>
     </div>
-
-    <!-- Cookie helpers and progress functions -->
     <script>
+    // Cookie helpers and progress functions
     function setCookie(name, value, days) {
         let expires = "";
         if (days) {
@@ -243,10 +227,18 @@
     function eraseCookie(name) {
         document.cookie = name+'=; Max-Age=-99999999;';
     }
-
     // Use 'card-inventory-save' cookie for inventory
     function saveProgress() {
-        setCookie('card-inventory-save', JSON.stringify(inventory), 365);
+        // Convert all Sets in inventory to arrays before saving
+        const inventoryToSave = {};
+        Object.keys(inventory).forEach(theme => {
+            inventoryToSave[theme] = {};
+            Object.keys(inventory[theme]).forEach(item => {
+                // Save as array for each card's rarities
+                inventoryToSave[theme][item] = Array.from(inventory[theme][item]);
+            });
+        });
+        setCookie('card-inventory-save', JSON.stringify(inventoryToSave), 365);
         setCookie('unlockedExotics', JSON.stringify(Array.from(unlockedExotics)), 365);
         setCookie('unlockedMythicals', JSON.stringify(Array.from(unlockedMythicals)), 365);
     }
@@ -254,9 +246,41 @@
         let inv = getCookie('card-inventory-save');
         let exo = getCookie('unlockedExotics');
         let myth = getCookie('unlockedMythicals');
-        if (inv) inventory = JSON.parse(inv);
-        if (exo) unlockedExotics = new Set(JSON.parse(exo));
-        if (myth) unlockedMythicals = new Set(JSON.parse(myth));
+        if (inv) {
+            // Restore inventory, converting arrays back to Sets
+            try {
+                const loadedInv = JSON.parse(inv);
+                inventory = {};
+                Object.keys(loadedInv).forEach(theme => {
+                    inventory[theme] = {};
+                    Object.keys(loadedInv[theme]).forEach(item => {
+                        inventory[theme][item] = new Set(loadedInv[theme][item]);
+                    });
+                });
+            } catch (e) {
+                inventory = {};
+            }
+        } else {
+            inventory = {};
+        }
+        if (exo) {
+            try {
+                unlockedExotics = new Set(JSON.parse(exo));
+            } catch (e) {
+                unlockedExotics = new Set();
+            }
+        } else {
+            unlockedExotics = new Set();
+        }
+        if (myth) {
+            try {
+                unlockedMythicals = new Set(JSON.parse(myth));
+            } catch (e) {
+                unlockedMythicals = new Set();
+            }
+        } else {
+            unlockedMythicals = new Set();
+        }
     }
     function clearProgress() {
         eraseCookie('card-inventory-save');
@@ -293,6 +317,9 @@
         let unlockedMythicals = new Set();
         let isAdminMode = false;
         let guaranteeExoticNext = false;
+
+        // -- Load save before any UI rendering or logic --
+        loadProgress();
 
         function toggleAdminInterface() {
             const adminInterface = document.getElementById('admin-interface');
@@ -390,6 +417,7 @@
         }
 
         function addToInventory(theme, item, rarity) {
+            // Allow repeated calls even after loading save
             if (!inventory[theme]) inventory[theme] = {};
             if (!inventory[theme][item]) inventory[theme][item] = new Set();
             inventory[theme][item].add(rarity);
@@ -444,14 +472,12 @@
                 cardList.forEach(({ card, rarity }) => {
                     const cardContainer = document.createElement('div');
                     cardContainer.className = 'inventory-card-container';
-
                     const cardElement = document.createElement('div');
                     cardElement.className = `inventory-card inventory-card-unlocked card-${rarity.toLowerCase()}`;
                     cardElement.innerHTML = `
                         <div class="front"></div>
                         <div class="back">${card} (${rarity})</div>
                     `;
-
                     cardContainer.appendChild(cardElement);
                     row.appendChild(cardContainer);
                 });
@@ -509,8 +535,7 @@
             document.getElementById('card-selection').style.display = 'none';
         }
 
-        // Load progress on page load
-        loadProgress();
+        // -- Ensure inventory is loaded and UI is up to date on page load --
         updateInventory();
     </script>
 </body>
