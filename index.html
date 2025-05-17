@@ -81,6 +81,7 @@
         .card .front {
             background-color: #555;
             color: white;
+            font-size: 2.5em;
         }
         .card .back {
             background-color: white;
@@ -388,16 +389,24 @@
                 }
             }
 
-            cards.forEach(cardData => {
+            cards.forEach((cardData, idx) => {
                 const cardContainer = document.createElement('div');
                 cardContainer.className = 'card-container';
+
+                // Card element starts unflipped
                 const card = document.createElement('div');
                 card.className = 'card';
+                card.setAttribute('data-flipped', 'false');
                 card.innerHTML = `
                     <div class="front">?</div>
                     <div class="back">${cardData.item} (${cardData.rarity})</div>
                 `;
-                card.onclick = () => selectCard(card, theme, cardData);
+                card.onclick = () => {
+                    if (card.getAttribute('data-flipped') === 'false') {
+                        selectCard(card, theme, cardData);
+                        card.setAttribute('data-flipped', 'true');
+                    }
+                };
                 cardContainer.appendChild(card);
                 cardsContainer.appendChild(cardContainer);
             });
@@ -467,8 +476,32 @@
                         }
                     });
 
-                    // Only show row if any rarity unlocked for this card
-                    if (cardRarities.length > 0) {
+                    // Show a flipped card if not unlocked, else show the card
+                    const row = document.createElement('div');
+                    row.className = 'inventory-row';
+
+                    if (cardRarities.length === 0) {
+                        // Card is locked, show as flipped with question mark
+                        const cardContainer = document.createElement('div');
+                        cardContainer.className = 'inventory-card-container';
+
+                        const cardElement = document.createElement('div');
+                        cardElement.className = 'inventory-card inventory-card-locked';
+                        cardElement.innerHTML = `
+                            <div class="front" style="font-size:2.2em; background:#555; color:white;">?</div>
+                            <div class="back"></div>
+                        `;
+                        // Keep it unflipped
+                        cardContainer.appendChild(cardElement);
+                        row.appendChild(cardContainer);
+
+                        // Add label
+                        const label = document.createElement('div');
+                        label.className = 'inventory-card-row-label';
+                        label.textContent = cardName;
+                        themeSection.appendChild(label);
+                        themeSection.appendChild(row);
+                    } else {
                         // Label for the card name
                         const label = document.createElement('div');
                         label.className = 'inventory-card-row-label';
@@ -476,8 +509,6 @@
                         themeSection.appendChild(label);
 
                         // Row for this card's rarities
-                        const row = document.createElement('div');
-                        row.className = 'inventory-row';
                         cardRarities.forEach(rarity => {
                             const cardContainer = document.createElement('div');
                             cardContainer.className = 'inventory-card-container';
@@ -487,6 +518,8 @@
                                 <div class="front"></div>
                                 <div class="back">${cardName} (${rarity})</div>
                             `;
+                            // Unlocked cards are visually flipped to show their face
+                            cardElement.style.transform = 'rotateY(180deg)';
                             cardContainer.appendChild(cardElement);
                             row.appendChild(cardContainer);
                         });
@@ -517,6 +550,7 @@
                 card.className = 'inventory-card inventory-card-unlocked card-exotic';
                 card.innerHTML = `<div class="front"></div>
                     <div class="back">${exotic} (Exotic)</div>`;
+                card.style.transform = 'rotateY(180deg)';
                 cardContainer.appendChild(card);
                 exoticsRow.appendChild(cardContainer);
             });
@@ -531,6 +565,7 @@
                 card.className = 'inventory-card inventory-card-unlocked card-mythical';
                 card.innerHTML = `<div class="front"></div>
                     <div class="back">${mythical} (Mythical)</div>`;
+                card.style.transform = 'rotateY(180deg)';
                 cardContainer.appendChild(card);
                 mythicalsRow.appendChild(cardContainer);
             });
