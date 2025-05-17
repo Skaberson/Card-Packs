@@ -103,6 +103,13 @@
         .inventory-section {
             margin: 20px 0;
         }
+        .inventory-card-row-label {
+            font-weight: bold;
+            margin-bottom: 2px;
+            margin-top: 8px;
+            text-align: left;
+            display: block;
+        }
         .inventory-row {
             display: flex;
             justify-content: center;
@@ -441,47 +448,51 @@
                 themeSection.className = 'inventory-section';
                 themeSection.innerHTML = `<h4>${theme} Pack</h4>`;
 
-                // Construct a list of card objects: [{card, rarity}]
+                // For checking if all cards are unlocked
                 let allUnlocked = true;
-                let cardList = [];
-                items[theme].cards.forEach(card => {
-                    const raritiesUnlocked = inventory[theme][card] || new Set();
-                    // Only push normal rarities
-                    inventoryDisplayOrder.forEach(rarity => {
-                        if (raritiesUnlocked.has(rarity)) {
-                            cardList.push({ card, rarity });
-                        }
-                    });
+
+                // Render each card name as its own row (with rarities)
+                items[theme].cards.forEach(cardName => {
+                    const raritiesUnlocked = inventory[theme][cardName] || new Set();
                     // For checking all unlocked:
                     if (raritiesUnlocked.size < inventoryDisplayOrder.length) {
                         allUnlocked = false;
                     }
-                });
 
-                // Sort by rarity (Legendary, Epic, Rare, Uncommon, Common), then by card name
-                cardList.sort((a, b) => {
-                    const rA = inventoryDisplayOrder.indexOf(a.rarity);
-                    const rB = inventoryDisplayOrder.indexOf(b.rarity);
-                    if (rA !== rB) return rA - rB;
-                    return a.card.localeCompare(b.card);
-                });
+                    // Only push normal rarities for each card
+                    const cardRarities = [];
+                    inventoryDisplayOrder.forEach(rarity => {
+                        if (raritiesUnlocked.has(rarity)) {
+                            cardRarities.push(rarity);
+                        }
+                    });
 
-                // Render the sorted row
-                const row = document.createElement('div');
-                row.className = 'inventory-row';
-                cardList.forEach(({ card, rarity }) => {
-                    const cardContainer = document.createElement('div');
-                    cardContainer.className = 'inventory-card-container';
-                    const cardElement = document.createElement('div');
-                    cardElement.className = `inventory-card inventory-card-unlocked card-${rarity.toLowerCase()}`;
-                    cardElement.innerHTML = `
-                        <div class="front"></div>
-                        <div class="back">${card} (${rarity})</div>
-                    `;
-                    cardContainer.appendChild(cardElement);
-                    row.appendChild(cardContainer);
+                    // Only show row if any rarity unlocked for this card
+                    if (cardRarities.length > 0) {
+                        // Label for the card name
+                        const label = document.createElement('div');
+                        label.className = 'inventory-card-row-label';
+                        label.textContent = cardName;
+                        themeSection.appendChild(label);
+
+                        // Row for this card's rarities
+                        const row = document.createElement('div');
+                        row.className = 'inventory-row';
+                        cardRarities.forEach(rarity => {
+                            const cardContainer = document.createElement('div');
+                            cardContainer.className = 'inventory-card-container';
+                            const cardElement = document.createElement('div');
+                            cardElement.className = `inventory-card inventory-card-unlocked card-${rarity.toLowerCase()}`;
+                            cardElement.innerHTML = `
+                                <div class="front"></div>
+                                <div class="back">${cardName} (${rarity})</div>
+                            `;
+                            cardContainer.appendChild(cardElement);
+                            row.appendChild(cardContainer);
+                        });
+                        themeSection.appendChild(row);
+                    }
                 });
-                themeSection.appendChild(row);
 
                 // Apply golden border if all cards are unlocked
                 const packElement = document.getElementById(`${theme}-Pack`);
