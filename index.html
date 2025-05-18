@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Card Packs</title>
     <style>
-        /* Styles for the card packs game and custom maker */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -136,6 +135,14 @@
     <script>
         let customPacks = {};
 
+        const items = {
+            Fantasy: ['Dragon', 'Wizard', 'Elf', 'Knight', 'Fairy'],
+            'Sci-Fi': ['Laser Gun', 'Alien', 'Spaceship', 'Robot', 'Asteroid'],
+            Adventure: ['Treasure Chest', 'Pirate', 'Explorer', 'Cave', 'Ancient Relic'],
+            Mystery: ['Secret Map', 'Hidden Path', 'Lost Key', 'Ancient Tome', 'Cryptic Statue'],
+            Horror: ['Vampire', 'Zombie', 'Werewolf', 'Ghost', 'Haunted Doll']
+        };
+
         function addCustomPackAndCard() {
             const packName = document.getElementById('custom-pack-name').value.trim();
             const cardName = document.getElementById('custom-card-name').value.trim();
@@ -183,6 +190,17 @@
                 packDiv.appendChild(cardList);
                 customPackList.appendChild(packDiv);
             });
+        }
+
+        function openPack(packName) {
+            if (items[packName]) {
+                alert(`Opening ${packName} pack with cards: ${items[packName].join(', ')}`);
+            } else if (customPacks[packName]) {
+                const customCards = customPacks[packName].map(card => `${card.name} (${card.rarity})`);
+                alert(`Opening custom ${packName} pack with cards: ${customCards.join(', ')}`);
+            } else {
+                alert('Pack not found!');
+            }
         }
     </script>
 </body>
