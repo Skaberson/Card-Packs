@@ -145,6 +145,32 @@
         .inventory-card-unlocked.card-legendary { border-color: gold; }
         .inventory-card-unlocked.card-mythical { border-color: violet; }
         .inventory-card-unlocked.card-exotic { border-color: cyan; }
+
+        /* --- INVENTORY CARD TEXT FIX --- */
+        .inventory-card .front,
+        .inventory-card .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .inventory-card .front {
+            background-color: #555;
+            color: white;
+        }
+        .inventory-card .back {
+            background-color: white;
+            color: black;
+            transform: rotateY(180deg);
+        }
+        /* ------------------------------- */
+
         #exotics-section,
         #mythicals-section,
         #normal-cards-section {
