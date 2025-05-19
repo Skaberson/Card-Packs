@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Card Packs</title>
     <style>
+        /* [styles unchanged; omitted for brevity] */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -12,7 +13,7 @@
             margin: 0;
             padding: 20px;
         }
-        h1, h2, h3 {
+        h1 {
             color: #333;
         }
         .packs {
@@ -25,80 +26,158 @@
         .pack {
             width: 100px;
             height: 100px;
+            padding: 0;
             background-color: #ddd;
             border-radius: 10px;
             cursor: pointer;
+            transition: transform 0.2s, border 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
             font-weight: bold;
             color: #333;
-            transition: transform 0.2s;
         }
         .pack:hover {
             transform: scale(1.1);
         }
-        .completed {
+        .pack.completed {
             border: 5px solid gold;
         }
-        #custom-maker {
-            margin-top: 30px;
-            padding: 20px;
-            border: 1px solid #ccc;
+        .cards {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .card-container {
+            width: 100px;
+            height: 150px;
+            perspective: 1000px;
+        }
+        .card {
+            width: 100%;
+            height: 100%;
             border-radius: 10px;
-            background-color: #f9f9f9;
-            text-align: left;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateY(0);
+            transition: transform 0.6s;
+            border: 5px solid transparent;
         }
-        #custom-maker h2 {
-            text-align: center;
-        }
-        #custom-maker div {
-            margin-bottom: 10px;
-        }
-        #custom-maker label {
-            display: block;
+        .card .front,
+        .card .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: bold;
         }
-        #custom-maker input {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+        .card .front {
+            background-color: #555;
+            color: white;
+            font-size: 2.5em;
         }
-        #custom-maker button {
+        .card .back {
+            background-color: white;
+            color: black;
+            transform: rotateY(180deg);
+        }
+        .card-flipped {
+            transform: rotateY(180deg);
+        }
+        .card-common { border-color: gray; }
+        .card-uncommon { border-color: green; }
+        .card-rare { border-color: blue; }
+        .card-epic { border-color: purple; }
+        .card-legendary { border-color: gold; }
+        .card-mythical { border-color: violet; }
+        .card-exotic { border-color: cyan; }
+        #inventory {
+            margin-top: 20px;
+        }
+        .inventory-section {
+            margin: 20px 0;
+        }
+        .inventory-card-row-label {
+            font-weight: bold;
+            margin-bottom: 2px;
+            margin-top: 8px;
+            text-align: left;
             display: block;
+        }
+        .inventory-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .inventory-card-container {
+            width: 100px;
+            height: 150px;
+            perspective: 1000px;
+        }
+        .inventory-card {
             width: 100%;
-            padding: 10px;
+            height: 100%;
+            border-radius: 10px;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateY(0);
+            transition: transform 0.6s;
+            border: 5px solid transparent;
+        }
+        .inventory-card-locked {
+            background-color: #bbb;
+        }
+        .inventory-card-unlocked {
+            cursor: pointer;
+        }
+        .inventory-card-unlocked.card-common { border-color: gray; }
+        .inventory-card-unlocked.card-uncommon { border-color: green; }
+        .inventory-card-unlocked.card-rare { border-color: blue; }
+        .inventory-card-unlocked.card-epic { border-color: purple; }
+        .inventory-card-unlocked.card-legendary { border-color: gold; }
+        .inventory-card-unlocked.card-mythical { border-color: violet; }
+        .inventory-card-unlocked.card-exotic { border-color: cyan; }
+        #exotics-section,
+        #mythicals-section,
+        #normal-cards-section {
+            display: none;
+        }
+        button {
+            padding: 10px 20px;
             background-color: #007bff;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
-        #custom-maker button:hover {
+        button:hover {
             background-color: #0056b3;
         }
-        #custom-packs {
-            margin-top: 20px;
-        }
-        #custom-packs h3 {
-            text-align: center;
-        }
-        .custom-pack {
+        #admin-interface {
+            display: none;
             margin-bottom: 15px;
         }
-        .custom-pack h4 {
-            margin: 0;
-            font-size: 1.2em;
-        }
-        .custom-pack ul {
-            margin: 5px 0 0 20px;
+        #restart-btn {
+            margin-bottom: 10px;
+            margin-right: 10px;
         }
     </style>
 </head>
 <body>
+    <button id="restart-btn" onclick="confirmRestartProgress()">Restart Progress</button>
+    <button onclick="toggleAdminInterface()">Admin Mode</button>
+    <div id="admin-interface">
+        <input type="password" id="admin-password" placeholder="Enter Code">
+        <button onclick="activateAdminCode()">Submit</button>
+    </div>
     <h1>Card Pack Game</h1>
     <div id="game">
         <div id="pack-selection">
@@ -111,97 +190,399 @@
                 <div class="pack" id="Horror-Pack" onclick="openPack('Horror')">Horror Pack</div>
             </div>
         </div>
+        <div id="card-selection" style="display: none;">
+            <p>Click on a card to select it:</p>
+            <div class="cards" id="cards"></div>
+            <button onclick="returnToPacks()">Return to Packs</button>
+        </div>
     </div>
-    <div id="custom-maker">
-        <h2>Create Custom Packs and Cards</h2>
-        <div>
-            <label for="custom-pack-name">Pack Name:</label>
-            <input type="text" id="custom-pack-name" placeholder="Enter pack name">
+    <div id="inventory">
+        <h2>Your Inventory</h2>
+        <div id="normal-cards-section">
+            <h3>Normal Cards</h3>
+            <div id="normal-cards-container"></div>
         </div>
-        <div>
-            <label for="custom-card-name">Card Name:</label>
-            <input type="text" id="custom-card-name" placeholder="Enter card name">
+        <div id="mythicals-section">
+            <h3>Mythicals</h3>
+            <div id="mythical-cards" class="inventory-row"></div>
         </div>
-        <div>
-            <label for="custom-card-rarity">Rarity:</label>
-            <input type="text" id="custom-card-rarity" placeholder="Enter rarity">
-        </div>
-        <button onclick="addCustomPackAndCard()">Add Custom Pack/Card</button>
-        <div id="custom-packs">
-            <h3>Custom Packs</h3>
-            <div id="custom-pack-list"></div>
+        <div id="exotics-section">
+            <h3>Exotics</h3>
+            <div id="exotic-cards" class="inventory-row"></div>
         </div>
     </div>
     <script>
-        let customPacks = {};
+    // Cookie helpers and progress functions
+    function setCookie(name, value, days) {
+        let expires = "";
+        if (days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days*24*60*60*1000));
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (encodeURIComponent(value) || "")  + expires + "; path=/";
+    }
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+        }
+        return null;
+    }
+    function eraseCookie(name) {
+        document.cookie = name+'=; Max-Age=-99999999;';
+    }
+    // Use 'card-inventory-save' cookie for inventory
+    function saveProgress() {
+        // Convert all Sets in inventory to arrays before saving
+        const inventoryToSave = {};
+        Object.keys(inventory).forEach(theme => {
+            inventoryToSave[theme] = {};
+            Object.keys(inventory[theme]).forEach(item => {
+                // Save as array for each card's rarities
+                inventoryToSave[theme][item] = Array.from(inventory[theme][item]);
+            });
+        });
+        setCookie('card-inventory-save', JSON.stringify(inventoryToSave), 365);
+        setCookie('unlockedExotics', JSON.stringify(Array.from(unlockedExotics)), 365);
+        setCookie('unlockedMythicals', JSON.stringify(Array.from(unlockedMythicals)), 365);
+    }
+    function loadProgress() {
+        let inv = getCookie('card-inventory-save');
+        let exo = getCookie('unlockedExotics');
+        let myth = getCookie('unlockedMythicals');
+        if (inv) {
+            // Restore inventory, converting arrays back to Sets
+            try {
+                const loadedInv = JSON.parse(inv);
+                inventory = {};
+                Object.keys(loadedInv).forEach(theme => {
+                    inventory[theme] = {};
+                    Object.keys(loadedInv[theme]).forEach(item => {
+                        inventory[theme][item] = new Set(loadedInv[theme][item]);
+                    });
+                });
+            } catch (e) {
+                inventory = {};
+            }
+        } else {
+            inventory = {};
+        }
+        if (exo) {
+            try {
+                unlockedExotics = new Set(JSON.parse(exo));
+            } catch (e) {
+                unlockedExotics = new Set();
+            }
+        } else {
+            unlockedExotics = new Set();
+        }
+        if (myth) {
+            try {
+                unlockedMythicals = new Set(JSON.parse(myth));
+            } catch (e) {
+                unlockedMythicals = new Set();
+            }
+        } else {
+            unlockedMythicals = new Set();
+        }
+    }
+    function clearProgress() {
+        eraseCookie('card-inventory-save');
+        eraseCookie('unlockedExotics');
+        eraseCookie('unlockedMythicals');
+        inventory = {};
+        unlockedExotics = new Set();
+        unlockedMythicals = new Set();
+        updateInventory();
+        saveProgress();
+    }
+    function confirmRestartProgress() {
+        if (confirm('ARE YOU SURE you want to restart your progress? This cannot be undone!')) {
+            clearProgress();
+        }
+    }
+    </script>
+    <script>
+        // Main game code (with cookie and sorting updates)
+        const rarities = ['Legendary', 'Epic', 'Rare', 'Uncommon', 'Common', 'Mythical', 'Exotic'];
+        // For inventory sorting: Legendary, Epic, Rare, Uncommon, Common (then Mythical, Exotic NOT shown here)
+        const inventoryDisplayOrder = ['Legendary', 'Epic', 'Rare', 'Uncommon', 'Common'];
 
+        let rarityChances = [1, 4, 15, 30, 50, 0, 0.1];
         const items = {
-            Fantasy: ['Dragon', 'Wizard', 'Elf', 'Knight', 'Fairy'],
-            'Sci-Fi': ['Laser Gun', 'Alien', 'Spaceship', 'Robot', 'Asteroid'],
-            Adventure: ['Treasure Chest', 'Pirate', 'Explorer', 'Cave', 'Ancient Relic'],
-            Mystery: ['Secret Map', 'Hidden Path', 'Lost Key', 'Ancient Tome', 'Cryptic Statue'],
-            Horror: ['Vampire', 'Zombie', 'Werewolf', 'Ghost', 'Haunted Doll']
+            Fantasy: { cards: ['Dragon', 'Wizard', 'Elf', 'Knight', 'Fairy'], exotic: 'Fantasy Phoenix', mythical: 'Golden Dragon' },
+            'Sci-Fi': { cards: ['Laser Gun', 'Alien', 'Spaceship', 'Robot', 'Asteroid'], exotic: 'Cosmic Entity', mythical: 'Star Voyager' },
+            Adventure: { cards: ['Treasure Chest', 'Pirate', 'Explorer', 'Cave', 'Ancient Relic'], exotic: 'Golden Compass', mythical: 'Lost Relic' },
+            Mystery: { cards: ['Secret Map', 'Hidden Path', 'Lost Key', 'Ancient Tome', 'Cryptic Statue'], exotic: 'Mystic Artifact', mythical: 'Ancient Treasure' },
+            Horror: { cards: ['Vampire', 'Zombie', 'Werewolf', 'Ghost', 'Haunted Doll'], exotic: 'Cursed Relic', mythical: 'Phantom Blade' }
         };
+        let inventory = {};
+        let unlockedExotics = new Set();
+        let unlockedMythicals = new Set();
+        let isAdminMode = false;
+        let guaranteeExoticNext = false;
 
-        function addCustomPackAndCard() {
-            const packName = document.getElementById('custom-pack-name').value.trim();
-            const cardName = document.getElementById('custom-card-name').value.trim();
-            const rarity = document.getElementById('custom-card-rarity').value.trim();
+        // -- Load save before any UI rendering or logic --
+        loadProgress();
 
-            if (!packName || !cardName || !rarity) {
-                alert('Please fill in all fields!');
-                return;
-            }
-
-            // Add to customPacks object
-            if (!customPacks[packName]) {
-                customPacks[packName] = [];
-            }
-            customPacks[packName].push({ name: cardName, rarity });
-
-            // Update the UI
-            updateCustomPacksUI();
-
-            // Clear the input fields
-            document.getElementById('custom-pack-name').value = '';
-            document.getElementById('custom-card-name').value = '';
-            document.getElementById('custom-card-rarity').value = '';
+        function toggleAdminInterface() {
+            const adminInterface = document.getElementById('admin-interface');
+            adminInterface.style.display = adminInterface.style.display === 'none' ? 'block' : 'none';
         }
 
-        function updateCustomPacksUI() {
-            const customPackList = document.getElementById('custom-pack-list');
-            customPackList.innerHTML = '';
+        function activateAdminCode() {
+            const adminInput = document.getElementById('admin-password').value;
+            if (adminInput === 'ultra gaming') {
+                isAdminMode = true;
+                alert('Admin Mode Activated!');
+            } else if (adminInput === 'easyrare') {
+                rarityChances = [1, 10, 50, 30, 9, 3];
+                alert('Easy Rare Mode Activated!');
+            } else if (adminInput === 'allcards') {
+                unlockAllCards();
+                alert('All cards unlocked!');
+            } else if (adminInput === 'exoticnow') {
+                guaranteeExoticNext = true;
+                alert('Your next pack will contain an Exotic card!');
+            } else {
+                alert('Invalid Code!');
+            }
+            document.getElementById('admin-password').value = '';
+            toggleAdminInterface();
+        }
 
-            Object.keys(customPacks).forEach(packName => {
-                const packDiv = document.createElement('div');
-                packDiv.className = 'custom-pack';
-
-                const packTitle = document.createElement('h4');
-                packTitle.textContent = packName;
-
-                const cardList = document.createElement('ul');
-                customPacks[packName].forEach(card => {
-                    const cardItem = document.createElement('li');
-                    cardItem.textContent = `${card.name} (${card.rarity})`;
-                    cardList.appendChild(cardItem);
+        function unlockAllCards() {
+            Object.keys(items).forEach(theme => {
+                if (!inventory[theme]) inventory[theme] = {};
+                items[theme].cards.forEach(item => {
+                    if (!inventory[theme][item]) inventory[theme][item] = new Set(rarities.slice(0, 5));
                 });
+                unlockedExotics.add(theme);
+                unlockedMythicals.add(theme);
+            });
+            updateInventory();
+            saveProgress();
+        }
 
-                packDiv.appendChild(packTitle);
-                packDiv.appendChild(cardList);
-                customPackList.appendChild(packDiv);
+        function openPack(theme) {
+            document.getElementById('pack-selection').style.display = 'none';
+            document.getElementById('card-selection').style.display = 'block';
+            const cardsContainer = document.getElementById('cards');
+            cardsContainer.innerHTML = '';
+            const cards = [];
+            let exoticInserted = false;
+
+            for (let i = 0; i < 5; i++) {
+                if (guaranteeExoticNext && !exoticInserted) {
+                    const exotic = items[theme].exotic;
+                    cards.push({ item: exotic, rarity: 'Exotic' });
+                    exoticInserted = true;
+                    guaranteeExoticNext = false;
+                } else {
+                    const item = getRandomItem(theme);
+                    const rarity = getRandomRarity();
+                    cards.push({ item, rarity });
+                }
+            }
+
+            cards.forEach((cardData, idx) => {
+                const cardContainer = document.createElement('div');
+                cardContainer.className = 'card-container';
+
+                // Card element starts unflipped
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.setAttribute('data-flipped', 'false');
+                card.innerHTML = `
+                    <div class="front">?</div>
+                    <div class="back">${cardData.item} (${cardData.rarity})</div>
+                `;
+                card.onclick = () => {
+                    if (card.getAttribute('data-flipped') === 'false') {
+                        selectCard(card, theme, cardData);
+                        card.setAttribute('data-flipped', 'true');
+                    }
+                };
+                cardContainer.appendChild(card);
+                cardsContainer.appendChild(cardContainer);
             });
         }
 
-        function openPack(packName) {
-            if (items[packName]) {
-                alert(`Opening ${packName} pack with cards: ${items[packName].join(', ')}`);
-            } else if (customPacks[packName]) {
-                const customCards = customPacks[packName].map(card => `${card.name} (${card.rarity})`);
-                alert(`Opening custom ${packName} pack with cards: ${customCards.join(', ')}`);
-            } else {
-                alert('Pack not found!');
-            }
+        function getRandomItem(theme) {
+            const themeItems = items[theme].cards;
+            return themeItems[Math.floor(Math.random() * themeItems.length)];
         }
+
+        function getRandomRarity() {
+            const random = Math.random() * 100;
+            let cumulative = 0;
+            for (let i = 0; i < rarities.length; i++) {
+                cumulative += rarityChances[i];
+                if (random < cumulative) return rarities[i];
+            }
+            return rarities[rarities.length - 1];
+        }
+
+        function selectCard(card, theme, cardData) {
+            card.classList.add('card-flipped', `card-${cardData.rarity.toLowerCase()}`);
+            addToInventory(theme, cardData.item, cardData.rarity);
+        }
+
+        function addToInventory(theme, item, rarity) {
+            // Allow repeated calls even after loading save
+            if (!inventory[theme]) inventory[theme] = {};
+            if (!inventory[theme][item]) inventory[theme][item] = new Set();
+            inventory[theme][item].add(rarity);
+            if (rarity === 'Exotic') unlockedExotics.add(theme);
+            if (rarity === 'Mythical') unlockedMythicals.add(theme);
+            updateInventory();
+            saveProgress();
+        }
+
+        function updateInventory() {
+            const exoticsRow = document.getElementById('exotic-cards');
+            const mythicalsRow = document.getElementById('mythical-cards');
+            const normalCardsContainer = document.getElementById('normal-cards-container');
+            exoticsRow.innerHTML = '';
+            mythicalsRow.innerHTML = '';
+            normalCardsContainer.innerHTML = '';
+
+            // Populate Normal Cards Section
+            Object.keys(inventory).forEach(theme => {
+                const themeSection = document.createElement('div');
+                themeSection.className = 'inventory-section';
+                themeSection.innerHTML = `<h4>${theme} Pack</h4>`;
+
+                // For checking if all cards are unlocked
+                let allUnlocked = true;
+
+                // Render each card name as its own row (with rarities)
+                items[theme].cards.forEach(cardName => {
+                    const raritiesUnlocked = inventory[theme][cardName] || new Set();
+                    // For checking all unlocked:
+                    if (raritiesUnlocked.size < inventoryDisplayOrder.length) {
+                        allUnlocked = false;
+                    }
+
+                    // Only push normal rarities for each card
+                    const cardRarities = [];
+                    inventoryDisplayOrder.forEach(rarity => {
+                        if (raritiesUnlocked.has(rarity)) {
+                            cardRarities.push(rarity);
+                        }
+                    });
+
+                    // Show a flipped card if not unlocked, else show the card
+                    const row = document.createElement('div');
+                    row.className = 'inventory-row';
+
+                    if (cardRarities.length === 0) {
+                        // Card is locked, show as flipped with question mark
+                        const cardContainer = document.createElement('div');
+                        cardContainer.className = 'inventory-card-container';
+
+                        const cardElement = document.createElement('div');
+                        cardElement.className = 'inventory-card inventory-card-locked';
+                        cardElement.innerHTML = `
+                            <div class="front" style="font-size:2.2em; background:#555; color:white;">?</div>
+                            <div class="back"></div>
+                        `;
+                        // Keep it unflipped
+                        cardContainer.appendChild(cardElement);
+                        row.appendChild(cardContainer);
+
+                        // Add label
+                        const label = document.createElement('div');
+                        label.className = 'inventory-card-row-label';
+                        label.textContent = cardName;
+                        themeSection.appendChild(label);
+                        themeSection.appendChild(row);
+                    } else {
+                        // Label for the card name
+                        const label = document.createElement('div');
+                        label.className = 'inventory-card-row-label';
+                        label.textContent = cardName;
+                        themeSection.appendChild(label);
+
+                        // Row for this card's rarities
+                        cardRarities.forEach(rarity => {
+                            const cardContainer = document.createElement('div');
+                            cardContainer.className = 'inventory-card-container';
+                            const cardElement = document.createElement('div');
+                            cardElement.className = `inventory-card inventory-card-unlocked card-${rarity.toLowerCase()}`;
+                            cardElement.innerHTML = `
+                                <div class="front"></div>
+                                <div class="back">${cardName} (${rarity})</div>
+                            `;
+                            // Unlocked cards are visually flipped to show their face
+                            cardElement.style.transform = 'rotateY(180deg)';
+                            cardContainer.appendChild(cardElement);
+                            row.appendChild(cardContainer);
+                        });
+                        themeSection.appendChild(row);
+                    }
+                });
+
+                // Apply golden border if all cards are unlocked
+                const packElement = document.getElementById(`${theme}-Pack`);
+                if (packElement) {
+                    if (allUnlocked) {
+                        packElement.classList.add('completed');
+                    } else {
+                        packElement.classList.remove('completed');
+                    }
+                }
+
+                normalCardsContainer.appendChild(themeSection);
+            });
+
+            // Populate Exotics Row
+            unlockedExotics.forEach(theme => {
+                const exotic = items[theme].exotic;
+                const cardContainer = document.createElement('div');
+                cardContainer.className = 'inventory-card-container';
+
+                const card = document.createElement('div');
+                card.className = 'inventory-card inventory-card-unlocked card-exotic';
+                card.innerHTML = `<div class="front"></div>
+                    <div class="back">${exotic} (Exotic)</div>`;
+                card.style.transform = 'rotateY(180deg)';
+                cardContainer.appendChild(card);
+                exoticsRow.appendChild(cardContainer);
+            });
+
+            // Populate Mythicals Row
+            unlockedMythicals.forEach(theme => {
+                const mythical = items[theme].mythical;
+                const cardContainer = document.createElement('div');
+                cardContainer.className = 'inventory-card-container';
+
+                const card = document.createElement('div');
+                card.className = 'inventory-card inventory-card-unlocked card-mythical';
+                card.innerHTML = `<div class="front"></div>
+                    <div class="back">${mythical} (Mythical)</div>`;
+                card.style.transform = 'rotateY(180deg)';
+                cardContainer.appendChild(card);
+                mythicalsRow.appendChild(cardContainer);
+            });
+
+            // Show sections if cards are present
+            document.getElementById('exotics-section').style.display = unlockedExotics.size > 0 ? 'block' : 'none';
+            document.getElementById('mythicals-section').style.display = unlockedMythicals.size > 0 ? 'block' : 'none';
+            document.getElementById('normal-cards-section').style.display = Object.keys(inventory).length > 0 ? 'block' : 'none';
+        }
+
+        function returnToPacks() {
+            document.getElementById('pack-selection').style.display = 'block';
+            document.getElementById('card-selection').style.display = 'none';
+        }
+
+        // -- Ensure inventory is loaded and UI is up to date on page load --
+        updateInventory();
     </script>
 </body>
 </html>
